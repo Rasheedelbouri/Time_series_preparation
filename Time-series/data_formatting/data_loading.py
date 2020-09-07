@@ -9,7 +9,7 @@ Created on Tue Aug 25 16:53:27 2020
 import pandas as pd
 import os
 import pickle
-from timestamps_included import separatePatients
+from data_formatting.timestamps_included import separatePatients
 from visualise_records import visualiser
 import sys
 
@@ -36,8 +36,7 @@ def selectFeatures(dataframe, cols):
     
     
 def sort(dataframe):
-    sp = separatePatients()
-    records = sp.separate(dataframe)
+    records = separatePatients(dataframe)
     return(records)
     
 def plot(records, comparison, vitals='HR', patient_id=2474):
@@ -51,9 +50,10 @@ class generateProfiles():
         if  isinstance(read, bool) and edition in (1,2):
             self.read = read
             self.edition = edition
-            self.path = '../../../netshares/ibme/Projects_1/orchid/processing/SK/data_v'
             self.normalised = normalised
-            self.norm = str("")
+            self.path = '../../data'
+            self.raw_path = '../../../netshares/ibme/Projects_1/orchid/processing/SK/data_v'
+            
 
         else:
             sys.exit("read must be a boolean and edition must be either 1 or 2")
@@ -61,21 +61,22 @@ class generateProfiles():
     def getDataSplit(self):
     
 
-        path = self.path + str(self.edition)
-    
         if self.read == True:
+            path = self.path
             if self.normalised == True:
                 self.norm = str("_normalised")
+            else:
+                self.norm = str("")
             if self.edition == 1:
-                with open("records1" + self.norm + ".pkl", "rb") as f:
+                with open(os.path.join(path, "records1" + self.norm + ".pkl"), "rb") as f:
                     records = pickle.load(f)
             elif self.edition == 2:
-                with open("records2" + self.norm + ".pkl", "rb") as f:
+                with open(os.path.join(path, "records2" + self.norm + ".pkl"), "rb") as f:
                     records = pickle.load(f)
             ids = list(records.keys())
             
         else:
-        
+            path = (self.raw_path + str(self.edition))
             all_cols = ['HR', 'RR','SBP','SPO2','TEMP','avpu','age', 'sex', 'seconds']
             events = load(path)
             events = cleanData(events)
@@ -84,7 +85,7 @@ class generateProfiles():
             for k in ids:
                 records[k] = selectFeatures(records[k], all_cols)
                 
-        episodes = loadEpisodes(path)
+        episodes = loadEpisodes(self.raw_path + str(self.edition))
         survivors = episodes[episodes.LinkedDeathdate.isnull()]
         deaths = episodes[~episodes.LinkedDeathdate.isnull()]
         
